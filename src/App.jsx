@@ -521,7 +521,9 @@ function App() {
       })
 
       const data = await response.json()
-      if (!data.success) throw new Error(data.error)
+      if (!data.success) {
+        throw new Error(data.error + (data.details ? `: ${data.details}` : ''))
+      }
 
       // 3. 시나리오 저장 및 캐릭터 분배
       const scenario = data.scenario
