@@ -1,5 +1,23 @@
 export default function WaitingRoom({ roomCode, room, playerInfo, onStartGame, onLeave, socketId }) {
   console.log('[WaitingRoom] Rendered with:', { roomCode, room, playerInfo, socketId })
+
+  // Null guard: room 데이터가 없으면 로딩 표시
+  if (!room || !room.settings || !room.players) {
+    return (
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: '100vh',
+        color: 'var(--text-secondary)'
+      }}>
+        <div style={{ fontSize: '48px', marginBottom: '16px' }}>⏳</div>
+        <div>대기실을 불러오는 중...</div>
+      </div>
+    )
+  }
+
   const isHost = room.host === socketId
   const currentPlayers = room.players.length
   const maxPlayers = room.settings.players

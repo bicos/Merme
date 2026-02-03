@@ -519,7 +519,7 @@ function App() {
       const initialPlayers = await fetchPlayers(roomCode)
       setGameData({
         roomCode,
-        room: { ...room, players: initialPlayers }
+        room: { ...room, host: room.host_id, players: initialPlayers } // Fix: Map host_id to host
       })
       setGameState('waiting')
 
