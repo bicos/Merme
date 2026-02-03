@@ -55,9 +55,26 @@ export default function MultiplayerGame({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [allMessages])
 
-  // 로컬 시스템 메시지 추가
+  // 로컬 시스템 메시지 자동 삭제 (10초 후)
+  useEffect(() => {
+    if (localMessages.length === 0) return
+
+    const timer = setTimeout(() => {
+      setLocalMessages(prev => {
+        const now = Date.now()
+        // 10초(10000ms) 지난 메시지 제거
+        return prev.filter(msg => now - msg.createdAt < 10000)
+      })
+    }, 1000) // 1초마다 체크
+
+    return () => clearTimeout(timer)
+  }, [localMessages])
+
+  // 로컬 시스템 메시지 추가 (createdAt 추가)
   const addLocalMessage = (content) => {
-    setLocalMessages(prev => [...prev, createSystemMessage(content)])
+    const msg = createSystemMessage(content)
+    msg.createdAt = Date.now()  // 생성 시점 저장
+    setLocalMessages(prev => [...prev, msg])
   }
 
   // 슬래시 명령어 처리
