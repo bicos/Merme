@@ -100,7 +100,8 @@ function App() {
 
       // 3. 상태 복구
       setPlayerInfo({ nickname, isHost: player.is_host, sessionId })
-      setGameData({ roomCode, room: { ...room, players: [] } })
+      // Fix: Map host_id to host for UI compatibility
+      setGameData({ roomCode, room: { ...room, host: room.host_id, players: [] } })
 
       // 현재 방 상태에 따라 화면 전환
       if (room.status === 'playing') {
@@ -109,7 +110,7 @@ function App() {
         // handleRoomUpdate(room) 호출 효과를 내기 위해:
         fetchPlayers(roomCode).then(players => {
           // players 정보가 있으면 room 객체 업데이트
-          const updatedRoom = { ...room, players }
+          const updatedRoom = { ...room, host: room.host_id, players }
           setGameData({ roomCode, room: updatedRoom })
           handleRoomUpdate(updatedRoom)
         })
@@ -117,7 +118,6 @@ function App() {
         fetchPlayers(roomCode) // 플레이어 목록 최신화
         setGameState(room.status === 'generating' ? 'loading' : room.status)
       }
-
     } catch (e) {
       console.error('Session recovery failed:', e)
       localStorage.removeItem('mm_session')
@@ -205,7 +205,8 @@ function App() {
 
       return {
         ...prev,
-        room: { ...updatedRoom, players: currentPlayers }
+        // Fix: Map host_id to host
+        room: { ...updatedRoom, host: updatedRoom.host_id, players: currentPlayers }
       }
     })
 
