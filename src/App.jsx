@@ -412,10 +412,14 @@ function App() {
 
       // 초기 데이터 설정 (구독보다 먼저)
       const initialPlayers = await fetchPlayers(roomCode)
+      console.log('[App] createRoom success. Setting gameData:', { roomCode, sessionId, players: initialPlayers })
+
       setGameData({
         roomCode,
         room: { code: roomCode, host: sessionId, settings, players: initialPlayers }
       })
+
+      console.log('[App] Transitioning to waiting state')
       setGameState('waiting')
 
     } catch (e) {
@@ -640,8 +644,10 @@ function App() {
     setGameData(null)
     setPlayerInfo(null)
     setGameState('lobby')
-    // 이전 구독은 useEffect cleanup에서 정리됨
+    localStorage.removeItem('mm_session') // 세션 삭제 추가
   }
+
+  const leaveGame = restartGame; // Fix: leaveGame was undefined
 
   return (
     <>

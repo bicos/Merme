@@ -1,4 +1,5 @@
 export default function WaitingRoom({ roomCode, room, playerInfo, onStartGame, onLeave, socketId }) {
+  console.log('[WaitingRoom] Rendered with:', { roomCode, room, playerInfo, socketId })
   const isHost = room.host === socketId
   const currentPlayers = room.players.length
   const maxPlayers = room.settings.players
