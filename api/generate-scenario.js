@@ -29,7 +29,7 @@ const handler = async (req, res) => {
     }
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
-    const MODEL_NAME = 'gemini-1.5-flash' // Updated to stable model or generic name
+    const MODEL_NAME = 'gemini-3-flash-preview' // Updated per user request (2026)
 
     const genreDescriptions = {
         mansion: '1920년대 영국 귀족 저택 배경의 클래식 추리물',
