@@ -173,9 +173,21 @@ function App() {
         table: 'messages',
         filter: `room_code=eq.${roomCode}`
       }, (payload) => {
+        // Map snake_case to camelCase for consistency
+        const msg = payload.new
+        const mappedMessage = {
+          id: msg.id,
+          playerId: msg.player_id,  // Map player_id -> playerId
+          nickname: msg.nickname,
+          characterName: msg.character_name,
+          characterEmoji: msg.character_emoji,
+          content: msg.content,
+          asCharacter: msg.as_character,
+          time: new Date(msg.created_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
+        }
         setGameData(prev => ({
           ...prev,
-          messages: [...(prev.messages || []), payload.new]
+          messages: [...(prev.messages || []), mappedMessage]
         }))
       })
       .subscribe()
@@ -201,10 +213,18 @@ function App() {
         setTimeout(() => fetchGameStartData(updatedRoom), 0)
       }
 
+      // scenario가 변경되면 (단서 조사 등) 업데이트
+      const updatedScenario = updatedRoom.scenario ? {
+        ...prev?.scenario,
+        ...updatedRoom.scenario,
+        clues: updatedRoom.scenario.clues || prev?.scenario?.clues
+      } : prev?.scenario
+
       return {
         ...prev,
         // Fix: Map host_id to host
-        room: { ...updatedRoom, host: updatedRoom.host_id, players: currentPlayers }
+        room: { ...updatedRoom, host: updatedRoom.host_id, players: currentPlayers },
+        scenario: updatedScenario  // Sync scenario updates (including clues)
       }
     })
 
