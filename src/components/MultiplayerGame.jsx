@@ -251,7 +251,8 @@ ${scenario.background}`)
     setHasVoted(true)
   }
 
-  const isHost = players?.find(p => p.id === socketId)?.isHost
+  // session_id 또는 sessionId로 플레이어 찾기
+  const isHost = players?.find(p => (p.session_id || p.sessionId) === socketId)?.isHost
 
   if (isVoting) {
     return (
@@ -377,7 +378,7 @@ ${scenario.background}`)
               <div
                 key={msg.id}
                 className={`message ${msg.isLocal ? 'message-system' :
-                    msg.playerId === socketId ? 'message-player' : 'message-gm'
+                  msg.playerId === socketId ? 'message-player' : 'message-gm'
                   }`}
                 style={msg.isLocal ? {
                   textAlign: 'left',
