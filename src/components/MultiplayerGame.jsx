@@ -25,11 +25,28 @@ export default function MultiplayerGame({
   const [localMessages, setLocalMessages] = useState([])
   const [selectedClue, setSelectedClue] = useState(null)
   const messagesEndRef = useRef(null)
-  
+
   const { scenario, myCharacter, players, messages = [], votingProgress } = gameData
 
+  // Null guard: scenario나 myCharacter가 없으면 로딩 표시
+  if (!scenario || !myCharacter) {
+    return (
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: '100vh',
+        color: 'var(--text-secondary)'
+      }}>
+        <div style={{ fontSize: '48px', marginBottom: '16px' }}>🎭</div>
+        <div>게임 데이터를 불러오는 중...</div>
+      </div>
+    )
+  }
+
   // 모든 메시지 (서버 + 로컬)
-  const allMessages = [...messages, ...localMessages].sort((a, b) => 
+  const allMessages = [...messages, ...localMessages].sort((a, b) =>
     new Date(a.time) - new Date(b.time)
   )
 
@@ -125,22 +142,22 @@ ${clue.relevance ? `💡 연관성: ${clue.relevance}` : ''}
         } else {
           const foundClues = scenario.clues.filter(c => c.found)
           const unfoundCount = scenario.clues.length - foundClues.length
-          
+
           let msg = `📋 **단서 현황** (${foundClues.length}/${scenario.clues.length})\n\n`
-          
+
           if (foundClues.length > 0) {
             msg += `**발견된 단서:**\n`
             foundClues.forEach(c => {
               msg += `• #${c.id} ${c.icon} ${c.name} (by ${c.foundBy})\n`
             })
           }
-          
+
           if (unfoundCount > 0) {
             msg += `\n❓ 미발견 단서: ${unfoundCount}개\n`
             msg += `\n💡 \`/clue [번호]\`로 상세 정보를 확인하세요.`
             msg += `\n💡 \`/조사\`로 새 단서를 발견하세요.`
           }
-          
+
           addLocalMessage(msg)
         }
         return true
@@ -213,14 +230,14 @@ ${scenario.background}`)
 
   const handleSend = () => {
     if (!input.trim()) return
-    
+
     // 슬래시 명령어 체크
     if (input.startsWith('/')) {
       handleCommand(input)
       setInput('')
       return
     }
-    
+
     onSendMessage(input, true)
     setInput('')
   }
@@ -243,7 +260,7 @@ ${scenario.background}`)
         <p style={{ color: 'var(--text-secondary)', marginBottom: '16px' }}>
           수집한 단서와 증언을 바탕으로 범인을 추리하세요
         </p>
-        
+
         {votingProgress && (
           <div style={{
             background: 'var(--bg-card)',
@@ -255,7 +272,7 @@ ${scenario.background}`)
             투표 현황: {votingProgress.totalVotes} / {votingProgress.totalPlayers}
           </div>
         )}
-        
+
         {!hasVoted ? (
           <>
             <div className="vote-grid">
@@ -272,8 +289,8 @@ ${scenario.background}`)
               ))}
             </div>
 
-            <button 
-              className="btn btn-primary" 
+            <button
+              className="btn btn-primary"
               onClick={handleVote}
               style={{ marginTop: '40px', padding: '16px 48px' }}
             >
@@ -313,8 +330,8 @@ ${scenario.background}`)
               <span>👥</span>
               <span>{players?.length}명</span>
             </div>
-            <div 
-              className="header-badge" 
+            <div
+              className="header-badge"
               style={{ cursor: 'pointer' }}
               onClick={() => handleCommand('/h')}
               title="도움말 보기"
@@ -323,8 +340,8 @@ ${scenario.background}`)
               <span>/h</span>
             </div>
             {isHost && (
-              <button 
-                className="btn btn-secondary" 
+              <button
+                className="btn btn-secondary"
                 style={{ padding: '8px 16px', fontSize: '14px' }}
                 onClick={onStartVoting}
               >
@@ -340,9 +357,9 @@ ${scenario.background}`)
             {/* 게임 시작 메시지 */}
             <div className="message message-system">
               🎭 게임이 시작되었습니다! 당신은 <strong>{myCharacter.name}</strong> ({myCharacter.role}) 역할입니다.
-              <br/>💡 <strong>/h</strong>를 입력하면 사용 가능한 명령어를 볼 수 있습니다.
+              <br />💡 <strong>/h</strong>를 입력하면 사용 가능한 명령어를 볼 수 있습니다.
             </div>
-            
+
             <div className="message message-gm">
               <div className="message-header">
                 <span className="message-author">🎭 GM</span>
@@ -357,14 +374,13 @@ ${scenario.background}`)
             </div>
 
             {allMessages.map(msg => (
-              <div 
-                key={msg.id} 
-                className={`message ${
-                  msg.isLocal ? 'message-system' : 
-                  msg.playerId === socketId ? 'message-player' : 'message-gm'
-                }`}
-                style={msg.isLocal ? { 
-                  textAlign: 'left', 
+              <div
+                key={msg.id}
+                className={`message ${msg.isLocal ? 'message-system' :
+                    msg.playerId === socketId ? 'message-player' : 'message-gm'
+                  }`}
+                style={msg.isLocal ? {
+                  textAlign: 'left',
                   maxWidth: '90%',
                   whiteSpace: 'pre-wrap'
                 } : undefined}
@@ -406,8 +422,8 @@ ${scenario.background}`)
         {/* 내 캐릭터 */}
         <div className="sidebar-section">
           <div className="sidebar-title">내 캐릭터</div>
-          <div 
-            className="card" 
+          <div
+            className="card"
             style={{ padding: '16px', cursor: 'pointer' }}
             onClick={() => handleCommand('/me')}
             title="클릭해서 상세 정보 보기"
@@ -423,10 +439,10 @@ ${scenario.background}`)
                 </div>
               </div>
             </div>
-            
-            <div style={{ 
-              padding: '12px', 
-              background: 'var(--bg-secondary)', 
+
+            <div style={{
+              padding: '12px',
+              background: 'var(--bg-secondary)',
               borderRadius: '8px',
               fontSize: '13px',
               marginBottom: '8px'
@@ -438,9 +454,9 @@ ${scenario.background}`)
             </div>
 
             {myCharacter.isMurderer && (
-              <div style={{ 
-                padding: '12px', 
-                background: 'rgba(220, 38, 38, 0.2)', 
+              <div style={{
+                padding: '12px',
+                background: 'rgba(220, 38, 38, 0.2)',
                 border: '1px solid var(--accent-red)',
                 borderRadius: '8px',
                 fontSize: '13px',
@@ -454,8 +470,8 @@ ${scenario.background}`)
 
         {/* 참가자 목록 */}
         <div className="sidebar-section">
-          <div 
-            className="sidebar-title" 
+          <div
+            className="sidebar-title"
             style={{ cursor: 'pointer' }}
             onClick={() => handleCommand('/players')}
           >
@@ -463,8 +479,8 @@ ${scenario.background}`)
           </div>
           <div className="player-list">
             {players?.map((player) => (
-              <div 
-                key={player.id} 
+              <div
+                key={player.id}
                 className="player-item"
                 style={{
                   border: player.id === socketId ? '2px solid var(--accent-purple)' : undefined
@@ -485,27 +501,27 @@ ${scenario.background}`)
 
         {/* 단서 */}
         <div className="sidebar-section">
-          <div 
+          <div
             className="sidebar-title"
             style={{ cursor: 'pointer' }}
             onClick={() => handleCommand('/clue')}
           >
             단서 ({scenario.clues.filter(c => c.found).length}/{scenario.clues.length}) 👆
           </div>
-          
+
           {/* 조사하기 버튼 */}
-          <button 
-            className="btn btn-secondary" 
+          <button
+            className="btn btn-secondary"
             style={{ width: '100%', marginBottom: '12px' }}
             onClick={() => handleCommand('/조사')}
           >
             🔍 새 단서 조사하기
           </button>
-          
+
           <div className="evidence-grid">
             {scenario.clues.map(clue => (
-              <div 
-                key={clue.id} 
+              <div
+                key={clue.id}
                 className={`evidence-item ${clue.found ? '' : 'locked'}`}
                 onClick={() => {
                   if (clue.found) {
@@ -530,7 +546,7 @@ ${scenario.background}`)
             ))}
           </div>
         </div>
-        
+
         {/* 빠른 명령어 */}
         <div className="sidebar-section">
           <div className="sidebar-title">빠른 명령어</div>
@@ -551,7 +567,7 @@ ${scenario.background}`)
 
       {/* 단서 상세 모달 */}
       {selectedClue && (
-        <div 
+        <div
           style={{
             position: 'fixed',
             top: 0,
@@ -566,7 +582,7 @@ ${scenario.background}`)
           }}
           onClick={() => setSelectedClue(null)}
         >
-          <div 
+          <div
             className="card"
             style={{ maxWidth: '500px', padding: '24px' }}
             onClick={e => e.stopPropagation()}
@@ -578,8 +594,8 @@ ${scenario.background}`)
                 💡 {selectedClue.relevance}
               </p>
             )}
-            <button 
-              className="btn btn-primary" 
+            <button
+              className="btn btn-primary"
               style={{ marginTop: '24px' }}
               onClick={() => setSelectedClue(null)}
             >

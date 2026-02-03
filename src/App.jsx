@@ -195,12 +195,10 @@ function App() {
       // players 정보 유지하면서 room 업데이트
       const currentPlayers = prev?.room?.players || []
 
-      // 게임 시작 감지
-      if (prev?.room?.status === 'generating' && updatedRoom.status === 'playing') {
-        // 비동기 호출이지만 상태 업데이트는 여기서 진행
-        // fetchGameStartData는 updatedRoom을 기반으로 동작
-        // 주의: fetchGameStartData 내부에서 prev 참조가 아닌 updatedRoom 사용
-        setTimeout(() => fetchGameStartData(updatedRoom, currentPlayers), 0)
+      // 게임 시작 감지: status가 playing으로 바뀌면 fetchGameStartData 호출
+      // fetchGameStartData 내부에서 gameState를 'game'으로 설정함
+      if (updatedRoom.status === 'playing' && prev?.room?.status !== 'playing') {
+        setTimeout(() => fetchGameStartData(updatedRoom), 0)
       }
 
       return {
@@ -214,16 +212,12 @@ function App() {
     if (updatedRoom.status === 'generating') {
       setGameState('loading')
       setLoadingMessage('AI가 시나리오를 생성 중입니다...')
-    } else if (updatedRoom.status === 'playing' && gameState !== 'game') {
-      setGameState('game')
     } else if (updatedRoom.status === 'voting') {
       setGameState('voting')
     } else if (updatedRoom.status === 'ended') {
-      // 게임 종료 처리는 별도 함수에서 players 정보가 필요할 수 있음
-      // 여기서는 상태만 업데이트하고 useEffect 등에서 감지하거나 직접 호출
-      // handleGameEnd는 room 정보를 받아서 처리
       setTimeout(() => handleGameEnd(updatedRoom), 0)
     }
+    // Note: 'playing' 상태는 fetchGameStartData에서 처리
   }
 
   const fetchPlayers = async (roomCode) => {
@@ -276,23 +270,57 @@ function App() {
     return mappedPlayers
   }
 
-  const fetchGameStartData = (room, currentPlayers = []) => {
-    // room: scenario, players(DB) 정보는 없을 수 있음, currentPlayers 사용
+  const fetchGameStartData = async (room) => {
+    // room에는 scenario가 포함되어 있음
+    if (!room.scenario) {
+      console.error('[fetchGameStartData] No scenario in room')
+      return
+    }
+
+    // DB에서 players를 다시 fetch하여 character_index 가져오기
+    const roomCode = gameData?.roomCode || room.code
+    const { data: freshPlayers } = await supabase
+      .from('players')
+      .select('*')
+      .eq('room_code', roomCode)
+      .order('created_at', { ascending: true })
+
+    if (!freshPlayers || freshPlayers.length === 0) {
+      console.error('[fetchGameStartData] No players found')
+      return
+    }
 
     // 내 캐릭터 찾기
-    // currentPlayers가 비어있다면 gameData 참조
-    const players = currentPlayers.length > 0 ? currentPlayers : gameData?.room?.players
-    const myPlayer = players?.find(p => p.nickname === playerInfo?.nickname)
-
-    if (!myPlayer || !room.scenario) return
+    const myPlayer = freshPlayers.find(p => p.nickname === playerInfo?.nickname)
+    if (!myPlayer) {
+      console.error('[fetchGameStartData] My player not found')
+      return
+    }
 
     const scenario = room.scenario
     const characterIndex = myPlayer.character_index
+
+    if (characterIndex === undefined || characterIndex === null) {
+      console.error('[fetchGameStartData] character_index not assigned yet')
+      return
+    }
+
     const myCharacter = scenario.characters[characterIndex]
     const isMurderer = characterIndex === scenario.murdererIndex
 
+    // Map players with character info for UI
+    const mappedPlayers = freshPlayers.map(p => ({
+      ...p,
+      isHost: p.is_host,
+      characterName: scenario.characters[p.character_index]?.name,
+      characterRole: scenario.characters[p.character_index]?.role,
+      characterEmoji: scenario.characters[p.character_index]?.emoji
+    }))
+
     setGameData(prev => ({
       ...prev,
+      room: { ...prev.room, players: mappedPlayers },
+      players: mappedPlayers, // Also set at top level for MultiplayerGame
       scenario: {
         ...scenario,
         clues: scenario.clues
@@ -313,6 +341,9 @@ function App() {
         isMurderer
       }
     }))
+
+    // 마지막에 gameState를 game으로 변경 (데이터 준비 완료 후)
+    setGameState('game')
   }
 
   const handleGameEnd = (room) => {
