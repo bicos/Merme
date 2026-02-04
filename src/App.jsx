@@ -139,7 +139,7 @@ function App() {
       if (room.status === 'playing' || room.status === 'voting') {
         // 게임 중이면 fetchGameStartData로 게임 데이터 복구
         console.log('[recoverSession] Recovering game data for status:', room.status)
-        await fetchGameStartData(room)
+        await fetchGameStartData(room, nickname)
         if (room.status === 'voting') {
           setGameState('voting')
         }
@@ -328,7 +328,7 @@ function App() {
     return mappedPlayers
   }
 
-  const fetchGameStartData = async (room) => {
+  const fetchGameStartData = async (room, forceNickname = null) => {
     // room에는 scenario가 포함되어 있음
     if (!room.scenario) {
       console.error('[fetchGameStartData] No scenario in room')
@@ -349,7 +349,10 @@ function App() {
     }
 
     // 내 캐릭터 찾기
-    const myPlayer = freshPlayers.find(p => p.nickname === playerInfo?.nickname)
+    // forceNickname이 있으면 사용 (세션 복구 시), 없으면 playerInfo 사용
+    const targetNickname = forceNickname || playerInfo?.nickname
+    console.log('[fetchGameStartData] Looking for player with nickname:', targetNickname)
+    const myPlayer = freshPlayers.find(p => p.nickname === targetNickname)
     if (!myPlayer) {
       console.error('[fetchGameStartData] My player not found')
       return
