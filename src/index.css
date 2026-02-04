@@ -831,9 +831,9 @@ body {
 
   /* 헤더 모바일 최적화 */
   .header {
-    padding: 12px 16px;
+    padding: 8px 8px;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 4px;
   }
 
   .header-title h1 {
@@ -859,15 +859,16 @@ body {
   }
 
   .chat-messages {
-    padding: 12px;
-    gap: 12px;
+    padding: 8px;
+    gap: 8px;
   }
 
   /* 메시지 스타일 */
   .message {
-    max-width: 90%;
-    padding: 12px 14px;
+    max-width: 100%;
+    padding: 10px 12px;
     font-size: 14px;
+    border-radius: 8px;
   }
 
   .message-content {
@@ -885,8 +886,8 @@ body {
 
   /* 채팅 입력 */
   .chat-input-container {
-    padding: 12px;
-    gap: 8px;
+    padding: 8px;
+    gap: 6px;
   }
 
   .chat-input,
