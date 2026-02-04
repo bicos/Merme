@@ -477,17 +477,28 @@ function App() {
 
       setPlayerInfo({ nickname, isHost: true, sessionId })
 
-      // 초기 데이터 설정 (구독보다 먼저)
-      const initialPlayers = await fetchPlayers(roomCode)
+      // 초기 데이터 설정 - fetchPlayers 대신 직접 가져오기 (레이스 컨디션 방지)
+      const { data: players } = await supabase
+        .from('players')
+        .select('*')
+        .eq('room_code', roomCode)
+        .order('created_at', { ascending: true })
+
+      const initialPlayers = (players || []).map(p => ({
+        ...p,
+        isHost: p.is_host,
+        sessionId: p.session_id
+      }))
+
       console.log('[App] createRoom success. Setting gameData:', { roomCode, sessionId, players: initialPlayers })
 
+      // gameData와 gameState를 함께 설정
       setGameData({
         roomCode,
         room: { code: roomCode, host: sessionId, settings, players: initialPlayers }
       })
-
-      console.log('[App] Transitioning to waiting state')
       setGameState('waiting')
+      console.log('[App] Transitioned to waiting state')
 
     } catch (e) {
       console.error(e)
