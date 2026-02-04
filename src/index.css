@@ -859,17 +859,16 @@ body {
   }
 
   .chat-messages {
-    padding: 4px;
-    gap: 6px;
+    padding: 12px;
+    gap: 12px;
   }
 
   /* 메시지 스타일 */
   .message {
-    max-width: 100%;
-    padding: 10px;
+    max-width: 90%;
+    padding: 12px 14px;
     font-size: 14px;
     border-radius: 8px;
-    margin: 0;
   }
 
   .message-content {
@@ -887,8 +886,8 @@ body {
 
   /* 채팅 입력 */
   .chat-input-container {
-    padding: 6px;
-    gap: 4px;
+    padding: 12px;
+    gap: 8px;
   }
 
   .chat-input,
