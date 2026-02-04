@@ -71,6 +71,8 @@ function App() {
 
   const recoverSession = async (roomCode, nickname, sessionId) => {
     try {
+      console.log('[recoverSession] Starting session recovery for:', { roomCode, nickname, sessionId })
+
       // 1. 방 정보 확인
       const { data: room, error: roomError } = await supabase
         .from('rooms')
@@ -107,28 +109,43 @@ function App() {
         return
       }
 
-      // 4. 플레이어 목록 먼저 가져오기 (await 필수!)
-      const players = await fetchPlayers(roomCode)
+      // 4. 플레이어 목록 직접 가져오기 (fetchPlayers의 setGameData 호출 방지)
+      const { data: players } = await supabase
+        .from('players')
+        .select('*')
+        .eq('room_code', roomCode)
+        .order('created_at', { ascending: true })
+
       if (!players || players.length === 0) {
         console.log('[recoverSession] No players found, clearing session')
         localStorage.removeItem('mm_session')
         return
       }
 
-      // 5. 상태 복구
+      const mappedPlayers = players.map(p => ({
+        ...p,
+        isHost: p.is_host,
+        sessionId: p.session_id
+      }))
+
+      // 5. 상태 복구 - gameData를 먼저 설정
       setPlayerInfo({ nickname, isHost: player.is_host, sessionId })
-      const roomWithPlayers = { ...room, host: room.host_id, players }
+      const roomWithPlayers = { ...room, host: room.host_id, players: mappedPlayers }
       setGameData({ roomCode, room: roomWithPlayers })
 
+      console.log('[recoverSession] Room status:', room.status)
+
       // 6. 현재 방 상태에 따라 화면 전환
-      if (room.status === 'playing') {
-        // 게임 중이면 게임 화면으로 (fetchGameStartData가 처리)
-        handleRoomUpdate(roomWithPlayers)
+      if (room.status === 'playing' || room.status === 'voting') {
+        // 게임 중이면 fetchGameStartData로 게임 데이터 복구
+        console.log('[recoverSession] Recovering game data for status:', room.status)
+        await fetchGameStartData(room)
+        if (room.status === 'voting') {
+          setGameState('voting')
+        }
       } else if (room.status === 'generating') {
         setGameState('loading')
         setLoadingMessage('AI가 시나리오를 생성 중입니다...')
-      } else if (room.status === 'voting') {
-        handleRoomUpdate(roomWithPlayers)
       } else {
         // waiting 상태
         setGameState('waiting')
@@ -359,8 +376,9 @@ function App() {
     }))
 
     setGameData(prev => ({
-      ...prev,
-      room: { ...prev.room, players: mappedPlayers },
+      ...(prev || {}),
+      roomCode: prev?.roomCode || room.code,
+      room: { ...(prev?.room || room), players: mappedPlayers },
       players: mappedPlayers, // Also set at top level for MultiplayerGame
       scenario: {
         ...scenario,
