@@ -80,11 +80,19 @@ function App() {
 
       if (roomError || !room) {
         // 방이 없으면 세션 정리
+        console.log('[recoverSession] Room not found, clearing session')
         localStorage.removeItem('mm_session')
         return
       }
 
-      // 2. 플레이어 정보 확인
+      // 2. 방이 이미 종료됐으면 세션 정리하고 로비로
+      if (room.status === 'ended') {
+        console.log('[recoverSession] Room already ended, clearing session')
+        localStorage.removeItem('mm_session')
+        return
+      }
+
+      // 3. 플레이어 정보 확인
       const { data: player, error: playerError } = await supabase
         .from('players')
         .select('*')
@@ -94,32 +102,39 @@ function App() {
 
       if (playerError || !player) {
         // 플레이어 정보가 없으면 (강퇴/삭제됨) 세션 정리
+        console.log('[recoverSession] Player not found, clearing session')
         localStorage.removeItem('mm_session')
         return
       }
 
-      // 3. 상태 복구
-      setPlayerInfo({ nickname, isHost: player.is_host, sessionId })
-      // Fix: Map host_id to host for UI compatibility
-      setGameData({ roomCode, room: { ...room, host: room.host_id, players: [] } })
+      // 4. 플레이어 목록 먼저 가져오기 (await 필수!)
+      const players = await fetchPlayers(roomCode)
+      if (!players || players.length === 0) {
+        console.log('[recoverSession] No players found, clearing session')
+        localStorage.removeItem('mm_session')
+        return
+      }
 
-      // 현재 방 상태에 따라 화면 전환
+      // 5. 상태 복구
+      setPlayerInfo({ nickname, isHost: player.is_host, sessionId })
+      const roomWithPlayers = { ...room, host: room.host_id, players }
+      setGameData({ roomCode, room: roomWithPlayers })
+
+      // 6. 현재 방 상태에 따라 화면 전환
       if (room.status === 'playing') {
-        // 게임 중이면 시나리오 데이터 등 추가 로드 필요 (fetchGameStartData 로직 재사용)
-        // 여기서는 간단히 handleRoomUpdate가 처리하도록 유도하거나 직접 호출
-        // handleRoomUpdate(room) 호출 효과를 내기 위해:
-        fetchPlayers(roomCode).then(players => {
-          // players 정보가 있으면 room 객체 업데이트
-          const updatedRoom = { ...room, host: room.host_id, players }
-          setGameData({ roomCode, room: updatedRoom })
-          handleRoomUpdate(updatedRoom)
-        })
+        // 게임 중이면 게임 화면으로 (fetchGameStartData가 처리)
+        handleRoomUpdate(roomWithPlayers)
+      } else if (room.status === 'generating') {
+        setGameState('loading')
+        setLoadingMessage('AI가 시나리오를 생성 중입니다...')
+      } else if (room.status === 'voting') {
+        handleRoomUpdate(roomWithPlayers)
       } else {
-        fetchPlayers(roomCode) // 플레이어 목록 최신화
-        setGameState(room.status === 'generating' ? 'loading' : room.status)
+        // waiting 상태
+        setGameState('waiting')
       }
     } catch (e) {
-      console.error('Session recovery failed:', e)
+      console.error('[recoverSession] Session recovery failed:', e)
       localStorage.removeItem('mm_session')
     }
   }
