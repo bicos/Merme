@@ -26,6 +26,23 @@ export default function MultiplayerGame({
   const [selectedClue, setSelectedClue] = useState(null)
   const messagesEndRef = useRef(null)
 
+  // Null guard: gameData 자체가 없으면 로딩 표시
+  if (!gameData) {
+    return (
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: '100vh',
+        color: 'var(--text-secondary)'
+      }}>
+        <div style={{ fontSize: '48px', marginBottom: '16px' }}>🎭</div>
+        <div>게임 데이터를 불러오는 중...</div>
+      </div>
+    )
+  }
+
   const { scenario, myCharacter, players, messages = [], votingProgress } = gameData
 
   // Null guard: scenario나 myCharacter가 없으면 로딩 표시
