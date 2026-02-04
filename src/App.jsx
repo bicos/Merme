@@ -270,10 +270,16 @@ function App() {
       isHost: p.is_host // Map is_host to isHost
     }))
 
-    setGameData(prev => ({
-      ...prev,
-      room: { ...prev.room, players: mappedPlayers }
-    }))
+    setGameData(prev => {
+      // prev가 null이면 기본 구조로 초기화
+      if (!prev) {
+        return { room: { players: mappedPlayers } }
+      }
+      return {
+        ...prev,
+        room: { ...prev.room, players: mappedPlayers }
+      }
+    })
 
     // 내 정보 업데이트 (호스트 여부 확인)
     if (playerInfo) {
