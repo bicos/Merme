@@ -700,7 +700,7 @@ function App() {
 
     const { data: room } = await supabase
       .from('rooms')
-      .select('votes')
+      .select('votes, scenario')
       .eq('code', gameData.roomCode)
       .single()
 
@@ -712,17 +712,32 @@ function App() {
       .update({ votes: currentVotes })
       .eq('code', gameData.roomCode)
 
-    // 모든 플레이어가 투표했는지 서버 트리거가 없으므로 클라이언트 중 하나(마지막 투표자)가 체크해서 종료 처리
-    // 또는 polling? 우선 handleRoomUpdate에서 votes가 변경될 때마다 체크하도록 위임 가능하지만
-    // 자신이 마지막 투표자인지 확인해서 종료 트리거
+    // 모든 플레이어가 투표했는지 확인
+    const totalPlayers = gameData.room?.players?.length || 0
+    const voteCount = Object.keys(currentVotes).length
 
-    const totalPlayers = gameData.room.players.length
-    if (Object.keys(currentVotes).length === totalPlayers) {
+    console.log('[App] castVote - totalPlayers:', totalPlayers, 'voteCount:', voteCount)
+
+    if (voteCount >= totalPlayers && totalPlayers > 0) {
+      console.log('[App] All votes received, ending game...')
       // 게임 종료
       await supabase
         .from('rooms')
         .update({ status: 'ended' })
         .eq('code', gameData.roomCode)
+
+      // Realtime 구독 지연 문제 회피: 직접 handleGameEnd 호출
+      // 최신 room 데이터 다시 가져오기
+      const { data: updatedRoom } = await supabase
+        .from('rooms')
+        .select('*')
+        .eq('code', gameData.roomCode)
+        .single()
+
+      if (updatedRoom) {
+        console.log('[App] Manually calling handleGameEnd')
+        handleGameEnd(updatedRoom)
+      }
     }
   }
 
