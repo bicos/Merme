@@ -17,7 +17,8 @@ export default function MultiplayerGame({
   onStartVoting,
   onCastVote,
   isVoting,
-  socketId
+  socketId,
+  onDestroyRoom
 }) {
   const [input, setInput] = useState('')
   const [selectedVote, setSelectedVote] = useState(null)
@@ -375,13 +376,23 @@ ${scenario.background}`)
               <span>/h</span>
             </div>
             {isHost && (
-              <button
-                className="btn btn-secondary"
-                style={{ padding: '8px 16px', fontSize: '14px' }}
-                onClick={onStartVoting}
-              >
-                🗳️ 투표 시작
-              </button>
+              <>
+                <button
+                  className="btn btn-secondary"
+                  style={{ padding: '8px 16px', fontSize: '14px' }}
+                  onClick={onStartVoting}
+                >
+                  🗳️ 투표 시작
+                </button>
+                <button
+                  className="btn btn-ghost"
+                  style={{ padding: '8px', fontSize: '14px', color: 'var(--accent-red)' }}
+                  onClick={onDestroyRoom}
+                  title="방 폭파 (게임 종료)"
+                >
+                  💥
+                </button>
+              </>
             )}
           </div>
         </div>

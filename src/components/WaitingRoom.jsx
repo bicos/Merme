@@ -1,4 +1,4 @@
-export default function WaitingRoom({ roomCode, room, playerInfo, onStartGame, onLeave, socketId }) {
+export default function WaitingRoom({ roomCode, room, playerInfo, onStartGame, onLeave, socketId, onDestroyRoom }) {
   console.log('[WaitingRoom] Rendered with:', { roomCode, room, playerInfo, socketId })
 
   // Null guard: room 데이터가 없으면 로딩 표시
@@ -181,6 +181,19 @@ export default function WaitingRoom({ roomCode, room, playerInfo, onStartGame, o
             </div>
           )}
         </div>
+
+        {/* 호스트 전용: 방 폭파 버튼 */}
+        {isHost && (
+          <div style={{ marginTop: '12px', display: 'flex', justifyContent: 'center' }}>
+            <button
+              className="btn btn-ghost"
+              onClick={onDestroyRoom}
+              style={{ color: 'var(--text-muted)', fontSize: '12px' }}
+            >
+              방 폭파 (게임 종료) 💥
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )

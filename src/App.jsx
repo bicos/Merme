@@ -261,7 +261,11 @@ function App() {
     })
 
     // 로딩 상태 처리
-    if (updatedRoom.status === 'generating') {
+    if (updatedRoom.status === 'destroyed') {
+      // 방이 폭파됨 - 모든 플레이어 로비로 이동
+      alert('호스트가 방을 폭파했습니다.')
+      restartGame()
+    } else if (updatedRoom.status === 'generating') {
       setGameState('loading')
       setLoadingMessage('AI가 시나리오를 생성 중입니다...')
     } else if (updatedRoom.status === 'voting') {
@@ -771,6 +775,52 @@ function App() {
 
   const leaveGame = restartGame; // Fix: leaveGame was undefined
 
+  // 호스트 전용: 방 폭파 (게임 강제 종료)
+  const destroyRoom = async () => {
+    if (!playerInfo?.isHost) {
+      showError('호스트만 방을 폭파할 수 있습니다.')
+      return
+    }
+
+    const confirmed = confirm('정말 방을 폭파하시겠습니까? 모든 플레이어가 퇴장됩니다.')
+    if (!confirmed) return
+
+    try {
+      const roomCode = gameData?.roomCode
+      if (!roomCode) return
+
+      // 1. 방 상태를 destroyed로 변경 (다른 플레이어들이 감지하도록)
+      await supabase
+        .from('rooms')
+        .update({ status: 'destroyed' })
+        .eq('code', roomCode)
+
+      // 2. 메시지 삭제
+      await supabase
+        .from('messages')
+        .delete()
+        .eq('room_code', roomCode)
+
+      // 3. 플레이어 삭제
+      await supabase
+        .from('players')
+        .delete()
+        .eq('room_code', roomCode)
+
+      // 4. 방 삭제
+      await supabase
+        .from('rooms')
+        .delete()
+        .eq('code', roomCode)
+
+      // 5. 로컬 상태 초기화
+      restartGame()
+    } catch (e) {
+      console.error('[destroyRoom] Error:', e)
+      showError('방 폭파 중 오류가 발생했습니다.')
+    }
+  }
+
   return (
     <>
       {error && (
@@ -805,6 +855,7 @@ function App() {
           playerInfo={playerInfo}
           onStartGame={startGame}
           onLeave={leaveGame}
+          onDestroyRoom={destroyRoom}
           socketId={playerInfo.sessionId} // socketId 대신 sessionId 사용
         />
       )}
@@ -824,6 +875,7 @@ function App() {
           onLeave={leaveGame}
           isVoting={gameState === 'voting'}
           socketId={playerInfo.sessionId}
+          onDestroyRoom={destroyRoom}
         />
       )}
 
