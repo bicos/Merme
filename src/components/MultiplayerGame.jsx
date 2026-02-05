@@ -27,6 +27,9 @@ export default function MultiplayerGame({
   const [localMessages, setLocalMessages] = useState([])
   const [selectedClue, setSelectedClue] = useState(null)
   const messagesEndRef = useRef(null)
+  // 스크롤 컨테이너 및 상태 관리를 위한 ref 추가
+  const chatContainerRef = useRef(null)
+  const isAtBottomRef = useRef(true)
 
   // Null guard: gameData 자체가 없으면 로딩 표시
   if (!gameData) {
@@ -69,25 +72,23 @@ export default function MultiplayerGame({
     new Date(a.time) - new Date(b.time)
   )
 
-  // 스크롤 자동 이동
+  // 스크롤 핸들러
+  const handleScroll = () => {
+    if (!chatContainerRef.current) return
+    const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current
+    // 스크롤이 바닥에 있는지 확인 (여유값 10px)
+    const isAtBottom = scrollHeight - scrollTop - clientHeight < 10
+    isAtBottomRef.current = isAtBottom
+  }
+
+  // 메시지 업데이트 시 스크롤 처리
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    if (isAtBottomRef.current) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    }
   }, [allMessages])
 
-  // 로컬 시스템 메시지 자동 삭제 (10초 후)
-  useEffect(() => {
-    if (localMessages.length === 0) return
-
-    const timer = setTimeout(() => {
-      setLocalMessages(prev => {
-        const now = Date.now()
-        // 10초(10000ms) 지난 메시지 제거
-        return prev.filter(msg => now - msg.createdAt < 10000)
-      })
-    }, 1000) // 1초마다 체크
-
-    return () => clearTimeout(timer)
-  }, [localMessages])
+  // 로컬 시스템 메시지 자동 삭제 로직 제거됨 (사용자 요청)
 
   // 로컬 시스템 메시지 추가 (createdAt 추가)
   const addLocalMessage = (content) => {
@@ -410,7 +411,11 @@ ${scenario.background}`)
 
         {/* Chat */}
         <div className="chat-container">
-          <div className="chat-messages">
+          <div
+            className="chat-messages"
+            ref={chatContainerRef}
+            onScroll={handleScroll}
+          >
             {/* 게임 시작 메시지 */}
             <div className="message message-system">
               🎭 게임이 시작되었습니다! 당신은 <strong>{myCharacter.name}</strong> ({myCharacter.role}) 역할입니다.
