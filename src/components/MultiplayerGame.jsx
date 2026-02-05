@@ -18,7 +18,8 @@ export default function MultiplayerGame({
   onCastVote,
   isVoting,
   socketId,
-  onDestroyRoom
+  onDestroyRoom,
+  onLeave
 }) {
   const [input, setInput] = useState('')
   const [selectedVote, setSelectedVote] = useState(null)
@@ -375,7 +376,7 @@ ${scenario.background}`)
               <span>❓</span>
               <span>/h</span>
             </div>
-            {isHost && (
+            {isHost ? (
               <>
                 <button
                   className="btn btn-secondary"
@@ -393,7 +394,17 @@ ${scenario.background}`)
                   💥
                 </button>
               </>
+            ) : (
+              <button
+                className="btn btn-ghost"
+                style={{ padding: '8px', fontSize: '16px' }}
+                onClick={onLeave}
+                title="방 나가기"
+              >
+                🚪
+              </button>
             )}
+            {/* 호스트도 나갈 수 있게 하려면 여기에 추가 가능하지만, 일단 일반 유저용으로 분리 */}
           </div>
         </div>
 

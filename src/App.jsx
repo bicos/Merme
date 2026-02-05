@@ -773,7 +773,37 @@ function App() {
     localStorage.removeItem('mm_session') // 세션 삭제 추가
   }
 
-  const leaveGame = restartGame; // Fix: leaveGame was undefined
+  // 게임 나가기 (일반 유저/호스트 공통)
+  const leaveGame = async () => {
+    const isHost = playerInfo?.isHost
+    const msg = isHost
+      ? '정말 나가시겠습니까? 호스트가 나가면 방이 유지되지 않을 수 있습니다.'
+      : '정말 방을 나가시겠습니까?'
+
+    if (!confirm(msg)) return
+
+    try {
+      const roomCode = gameData?.roomCode
+      const sessionId = playerInfo?.sessionId
+
+      if (roomCode && sessionId) {
+        // 플레이어 목록에서 제거
+        await supabase
+          .from('players')
+          .delete()
+          .match({ room_code: roomCode, session_id: sessionId })
+
+        // 만약 내가 호스트였다면, 방 상태를 업데이트하거나 후속 조치가 필요할 수 있음
+        // 현재 로직상 호스트가 나가면 방이 그대로 남을 수 있으나, 
+        // 일반적인 구현에서는 호스트가 나가면 방장이 위임되거나 방이 폭파됨.
+        // 여기서는 일단 플레이어만 삭제하고 나감.
+      }
+    } catch (e) {
+      console.error('[leaveGame] Error:', e)
+    } finally {
+      restartGame()
+    }
+  }
 
   // 호스트 전용: 방 폭파 (게임 강제 종료)
   const destroyRoom = async () => {
